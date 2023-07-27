@@ -1,0 +1,9 @@
+*.o
+*.mod
+*.out
+*.swp
+*.so
+.vscode
+*.so
+*.pyc
+__pycache__

@@ -1,0 +1,19 @@
+# FMO 7-state model
+# System
+-model fmo7
+-basis site
+-T 77
+-lamda 35.
+-omegac 106.14
+-units cmm1
+-init 0
+-obstyp pop
+-nucsamp cl
+-elsamp theta
+#
+# Convergence
+-ntraj 1000
+-nt    8000
+-dt 0.25
+-nf 420
+-npar 8

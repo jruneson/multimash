@@ -1,0 +1,19 @@
+# Spin-boson benchmark model with Debye bath
+#
+# System
+-model spinboson
+-Delta 1.0
+-eps 1.0
+-beta 0.25
+-lamda 0.5
+-omegac 1.0
+#
+# MASH
+-init 0
+-nucsamp wigner
+#
+# Convergence
+-ntraj 1000
+-nt    2000
+-dt    0.01
+-nf 100

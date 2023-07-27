@@ -1,0 +1,21 @@
+# Example input file for 3-state FMO
+#
+# System options (77 K)
+-model fmo3
+-diabasis site
+-T 77
+-lamda 35.
+-omegac 106.14
+-units cmm1
+#
+# MASH options
+-init 0
+-nucsamp cl
+-elsamp theta
+#
+# Convergence options
+-ntraj 1000
+-nt    4000
+-dt 0.25
+-nf 180
+-npar 8
