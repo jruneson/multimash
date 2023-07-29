@@ -1,0 +1,15 @@
+# Spin-boson benchmark model with Debye bath
+# System
+-model tully1
+-init 0
+-nucsamp WP
+-WPenergy 0.03
+-gamma 0.5
+-obstyp nuc
+#
+# Convergence
+-ntraj 100000
+-nt    600
+-dt    0.25
+-units fs
+-npar 1
