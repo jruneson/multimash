@@ -124,7 +124,6 @@ contains
 !     typ==1 -- binned (Theta function)
 !     typ==2 -- weighted in the Phin way
 !
-      complex(dpc), allocatable ::  c2(:)
       overn = 1.d0/ns
       call cstate_ad(c,l) !highest populated state
       obs = 0.d0
@@ -140,43 +139,12 @@ contains
       end if
 
       ! Coherences
-      allocate(c2(ns))
-      ort2 = 1.d0/sqrt(2.d0)
       do k=1,ns
          do l=k+1,ns
-            cohx = 0.d0
-            cohy = 0.d0
-            c2 = c
-            c2(l) = ort2*(c(l) + c(k))
-            c2(k) = ort2*(c(l) - c(k))
-            call cstate_ad(c2,l2)
-            sgn = 0
-            if (l2.eq.l) sgn = 1
-            if (l2.eq.k) sgn = -1
-            if (typ.eq.1) then
-               cohx = sgn
-               ! cohx = 2.d0*real(conjg(c(l))*c(k))
-            else if (typ.eq.2) then
-               cohx = alpha*(abs(c2(l))**2 - abs(c2(k))**2)
-            end if
-
-            c2(l) = ort2*(c(l) + iu*c(k))
-            c2(k) = ort2*(c(l) - iu*c(k))
-            call cstate_ad(c2,l2)
-            sgn = 0
-            if (l2.eq.l) sgn = 1
-            if (l2.eq.k) sgn = -1
-            if (typ.eq.1) then
-               cohy = sgn
-               ! cohy = 2.d0*aimag(conjg(c(l))*c(k))
-            else if (typ.eq.2) then
-               cohy = alpha*(abs(c2(l))**2 - abs(c2(k))**2)
-            end if
-            obs(l,k) = 0.5d0*(cohx + iu*cohy)
-            obs(k,l) = 0.5d0*(cohx - iu*cohy)
+            obs(k,l) = alpha*conjg(c(k))*c(l)
+            obs(l,k) = conjg(obs(k,l))
          end do
       end do
-      deallocate(c2)
    end subroutine
 
    subroutine obsbls(q, qe, pe, obs, rep, typ, poponly)

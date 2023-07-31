@@ -315,7 +315,6 @@ subroutine runpar_all(q, p, qe, pe, bdt, Et, ierr, &
 !
    allocate(dbt(nt+1,ns,ns,np),qt(nt+1,nf,np),pt(nt+1,nf,np), &
    qet(nt+1,ns,np),pet(nt+1,ns,np),dEt(nt+1,np))
-   allocate(dEt(nt+1,np))
 !$omp parallel do default(shared) private(j)
    do j=1,np
       call runtrj(q(:,j), p(:,j), qe(:,j), pe(:,j), qt(:,:,j), &
