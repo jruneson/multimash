@@ -7,6 +7,8 @@ module mash
 
    real(dp) :: alpha  ! ns-dependent constant in observables
 
+   real(dp), allocatable :: Umeas(:,:)
+
 contains
 
 ! =============== Initialization =============
@@ -22,6 +24,15 @@ contains
       alpha = (ns-1.d0)/(Hn-1.d0)
    end subroutine
 
+   subroutine initbasis(Umeas_)
+      use pes, only : ns
+      real(dp) :: Umeas_(ns,ns)
+!
+!     Initialize basis to do measurements in
+!
+      allocate(Umeas(ns,ns))
+      Umeas = Umeas_
+   end subroutine
 
 ! ============= Potential, Hamiltonian =============
 
@@ -169,7 +180,7 @@ contains
          deallocate(Vad,U)
       else if (rep.eq.'d') then
          ! Diabatic observables
-         c = dcmplx(qe,pe)
+         c = dcmplx(matmul(qe,Umeas),matmul(pe,Umeas))
          call obsbls_mash(c, obs, typ, poponly)
       else
          stop 'obsbls: Undefined representation'

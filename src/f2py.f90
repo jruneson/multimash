@@ -59,6 +59,24 @@ subroutine init_mash()
    call init()
 end subroutine
 
+subroutine init_basis(Uexc,ns)
+   use types
+   use mash, only : initbasis
+   real(dp), intent(in) :: Uexc(ns,ns)
+   integer :: ns
+!
+!  Initialize measurement basis.
+!
+   call initbasis(Uexc)
+end subroutine
+
+subroutine get_basis(Uexc,ns)
+   use types
+   use mash, only : Umeas
+   real(dp), intent(out) :: Uexc(ns,ns)
+   Uexc = Umeas
+end subroutine
+
 ! ================ Useful wrappers for potentials etc. =================
 
 subroutine get_vad(q,nf,ns,Vad,U)
@@ -196,7 +214,7 @@ subroutine runtrj(q, p, qe, pe, qt, pt, qet, pet, Et, &
 !  Run a trajectory
 !
    real(dp), allocatable :: Vad(:), U(:,:), dvdq(:)
-   ! logical :: fromfile = .false. ! Debugging option: 
+   ! logical :: fromfile = .false. ! Debugging option
    integer :: a !, atmp
 
    allocate(Vad(ns),U(ns,ns),dvdq(nf))

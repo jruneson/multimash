@@ -111,11 +111,6 @@ def setup_model(args):
         for i in range(ns):
             omega[i*nf_site:(i+1)*nf_site] = omega[:nf_site]
             Vlin[i*nf_site:(i+1)*nf_site,i,i] = -c
-        if args.diabasis=='exc':
-            """ Work in exciton basis """
-            eigs, U = np.linalg.eigh(Vconst)
-            Vconst = np.diag(eigs)
-            Vlin = np.einsum('kl,flm,mn->fkn', U.T, Vlin, U)
     elif model=='fmo7':
         ns = 7
         Vlin = np.zeros((nf,ns,ns),dtype=np.float64)
@@ -154,11 +149,6 @@ def setup_model(args):
         for i in range(ns):
             omega[i*nf_site:(i+1)*nf_site] = omega[:nf_site]
             Vlin[i*nf_site:(i+1)*nf_site,i,i] = c
-        if args.diabasis=='exc':
-            """ Work in exciton basis """
-            eigs, U = np.linalg.eigh(Vconst)
-            Vconst = np.diag(eigs)
-            Vlin = np.einsum('kl,flm,mn->fkn', U.T, Vlin, U)
 
     """ ======= Initialize mass ======= """
     mass = np.ones(nf)
@@ -169,8 +159,11 @@ def setup_model(args):
         ns = 2
         mass = np.ones(1)*2000. 
         mashf90.init_tully(model[-1],mass)
-    elif model in ['fmo3','fmo7'] and args.diabasis=='site':
-        mashf90.init_frexc(mass,omega,Vconst,c,nf,nf_site,ns)    
+    elif model in ['fmo3','fmo7']:
+        mashf90.init_frexc(mass,omega,Vconst,c,nf,nf_site,ns)  
+        if args.diabasis=='exc':
+            eigs, U = np.linalg.eigh(Vconst)
+            mashf90.init_basis(U,ns)  
     else:
         mashf90.init_linvib(mass,omega,Vconst,Vlin,nf,ns)
 
@@ -255,11 +248,6 @@ def sample(args,mass,omega,nf,ns):
                 normals = normals/np.linalg.norm(normals)
                 qej=normals[:ns]
                 pej=normals[ns:]
-                if args.initbasis=='adia':
-                    """ Convert from adia to dia """
-                    vad,U = mashf90.get_vad(q[:,j],ns)
-                    qej = np.dot(U,qej)
-                    pej = np.dot(U,pej)
                 pop = qej**2+pej**2
                 l=0
                 for k in range(ns):
@@ -276,11 +264,16 @@ def sample(args,mass,omega,nf,ns):
             phi = np.random.uniform(0,2*np.pi,ns)
             qe[:,j] = np.cos(phi)*np.sqrt(Pn)
             pe[:,j] = np.sin(phi)*np.sqrt(Pn)
-            if args.initbasis=='adia':
-                """ Convert from adia to dia """
-                vad,U = mashf90.get_vad(q[:,j],ns)
-                qej = np.dot(U,qej)
-                pej = np.dot(U,pej)
+        if args.initbasis=='dia' and args.diabasis=='exc':
+            """ Convert from exc to site """
+            U = mashf90.get_basis(ns)
+            qe[:,j] = np.dot(U,qe[:,j])
+            pe[:,j] = np.dot(U,pe[:,j])
+        elif args.initbasis=='adia':
+            """ Convert from adia to dia """
+            vad,U = mashf90.get_vad(q[:,j],ns)
+            qe[:,j] = np.dot(U,qe[:,j])
+            pe[:,j] = np.dot(U,pe[:,j])
     return q,p,qe,pe
 
 def savedata(B,t,ns,args):
