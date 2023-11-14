@@ -26,7 +26,7 @@ There are plenty of available option flags and you can add more to suit your sys
 Hints: 
 - Make sure `mash.py` is executable, otherwise `chmod u+x mash.py`
 - create a symbolic link to `mash.py` in some place in your PATH, so that you can call it from anywhere.
-- You may need to add the directory to your PYTHONPATH.
+- You may need to add the present directory to your PYTHONPATH.
 
 ## What comes in
 Run `mash.py -h` to see the available options. In general you should know about the following:
@@ -43,7 +43,8 @@ Run `mash.py -h` to see the available options. In general you should know about 
 Depends on what `obstyp` you specified, but for `pop` you should see a file `pop.out` which contains time in the first column and then the state populations in the following columns.
 
 ## Add a new potential
-The Fortran code contains a few potentials, e.g. `linvib` and `tully`. If you want to create a different potential, add another file with the subroutines `pot` and `grad` specifying the diabatic potential and gradient. Copy the initialization routine from one of the existing potentials, and (if necessary) add a potential-specific init subroutine in the beginning of `f2py.f90`
+The Fortran code contains a few potentials, e.g. `linvib` and `tully`. If you want to create a different potential, add another file with the subroutines `pot` and `grad` specifying the diabatic potential and gradient. Copy the initialization routine from one of the existing potentials, and (if necessary) add a potential-specific init subroutine in the beginning of `f2py.f90`.
+If the potential has a particularly simple form that allows for faster computation of the adiabatic gradient, it is also possible to override the generic adiabatic gradient routines - see `frexc.f90` for an example using the Frenkel-exciton model.
 
 
 ***
