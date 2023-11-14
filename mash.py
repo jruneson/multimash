@@ -58,12 +58,14 @@ ndiscarded = 0
 for itraj in range(ntraj//npar):
     q,p,qe,pe = utils.sample(args,mass,omega,nf,ns)
 
+    reps = {'site':'d','exc':'e','adia':'a','dia':'d'}
+    rep = reps[args.basis]
     if obstyp=='pop':
         """ Measure population dynamics """
-        bt, Et, ierr = mashf90.runpar_poponly(q, p, qe, pe, dt, nt, nf, ns, npar)
+        bt, Et, ierr = mashf90.runpar_poponly(q, p, qe, pe, rep, dt, nt, nf, ns, npar)
     elif obstyp=='all':
         """ Measure dynamics of populations and coherences """
-        bt, Et, ierr = mashf90.runpar_all(q, p, qe, pe, dt, nt, nf, ns, npar)    
+        bt, Et, ierr = mashf90.runpar_all(q, p, qe, pe, rep, dt, nt, nf, ns, npar)    
     elif obstyp=='nuc':
         """ Measure final nuclear distribution (Tully) """
         ierr = np.zeros(npar)

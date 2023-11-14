@@ -59,24 +59,6 @@ subroutine init_mash()
    call init()
 end subroutine
 
-subroutine init_basis(Uexc,ns)
-   use types
-   use mash, only : initbasis
-   real(dp), intent(in) :: Uexc(ns,ns)
-   integer :: ns
-!
-!  Initialize measurement basis.
-!
-   call initbasis(Uexc)
-end subroutine
-
-subroutine get_basis(Uexc,ns)
-   use types
-   use mash, only : Umeas
-   real(dp), intent(out) :: Uexc(ns,ns)
-   Uexc = Umeas
-end subroutine
-
 ! ================ Useful wrappers for potentials etc. =================
 
 subroutine get_vad(q,nf,ns,Vad,U)
@@ -271,7 +253,7 @@ end subroutine
 
 ! ============= Parallelized functions ==============
 
-subroutine runpar_poponly(q, p, qe, pe, bdt, Et, ierr, &
+subroutine runpar_poponly(q, p, qe, pe, bdt, Et, ierr, rep, &
    dt, nt, nf, ns, np)
    use types
    use mash, only : pops
@@ -284,6 +266,7 @@ subroutine runpar_poponly(q, p, qe, pe, bdt, Et, ierr, &
    real(dp),allocatable :: qt(:,:,:), pt(:,:,:), qet(:,:,:), pet(:,:,:)
    real(dp), intent(out) :: Et(nt+1)
    integer, intent(out) :: ierr(np)
+   character :: rep ! Representation to measure in ('d'=site, 'e'=exciton or 'a'=adia)
    real(dp), allocatable :: dEt(:,:)
 !
 !  Run a batch of trajectories in parallel
@@ -299,7 +282,7 @@ subroutine runpar_poponly(q, p, qe, pe, bdt, Et, ierr, &
 
       do it=1,nt+1
          call pops(qt(it,:,j), qet(it,:,j), pet(it,:,j), &
-            dbdt(it,:,j), 'd', 2)
+            dbdt(it,:,j), rep, 2)
       end do
 
       if (ierr(j).ne.0) then
@@ -313,7 +296,7 @@ subroutine runpar_poponly(q, p, qe, pe, bdt, Et, ierr, &
    deallocate(dbdt,dEt,qt,pt,qet,pet)
 end subroutine
 
-subroutine runpar_all(q, p, qe, pe, bdt, Et, ierr, &
+subroutine runpar_all(q, p, qe, pe, bdt, Et, ierr, rep, &
    dt, nt, nf, ns, np)
    use types
    use mash, only : obsbls
@@ -324,6 +307,7 @@ subroutine runpar_all(q, p, qe, pe, bdt, Et, ierr, &
    complex(dpc), intent(out) :: bdt(nt+1,ns,ns)
    real(dp), intent(out) :: Et(nt+1)
    integer, intent(out) :: ierr(np)
+   character :: rep
    complex(dpc),allocatable :: dbt(:,:,:,:)
    real(dp), allocatable :: qt(:,:,:), pt(:,:,:), qet(:,:,:), pet(:,:,:)
    real(dp), allocatable :: dEt(:,:)
@@ -340,7 +324,7 @@ subroutine runpar_all(q, p, qe, pe, bdt, Et, ierr, &
          dt, ierr(j), nt, nf, ns)
       do it=1,nt+1
          call obsbls(qt(it,:,j), qet(it,:,j), pet(it,:,j), & 
-            dbt(it,:,:,j), 'd', 2, .false.)
+            dbt(it,:,:,j), rep, 2, .false.)
       end do
       if (ierr(j).ne.0) then
          ! Error -> discard trajectory

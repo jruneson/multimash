@@ -25,8 +25,8 @@ def read_args():
     tully = parser.add_argument_group("tully")
     parser.add_argument("-model", type=str, default="spinboson", help="Model system", 
                         choices=["spinboson","biexciton","fmo3","fmo7","pyrazine","tully1","tully2","lh2"])
-    parser.add_argument("-diabasis","-basis", type=str, default="site", help="Diabatic basis for certain model systems", 
-                        choices=["exc","site"])
+    parser.add_argument("-basis", type=str, default="site", help="Diabatic basis for certain model systems", 
+                        choices=["exc","site","adia"])
     parser.add_argument("-units", type=str, default="au",help="""Choose unit system. 
                         cmm1: input in cmm1, output in fs. 
                         fs: input in fs, output in fs. """,
@@ -34,7 +34,7 @@ def read_args():
     parser.add_argument("-obstyp", type=str, default="pop", help="Observable types", 
                         choices=["pop","all","mannrich","nuc"])
     parser.add_argument("-init", type=int,help="Initial state (in Python indexing)")
-    parser.add_argument("-initbasis",type=str,default='dia',choices=["dia","adia"],help='Basis for initial state')
+    parser.add_argument("-initbasis",type=str,default='dia',choices=["dia","adia","exc"],help='Basis for initial state')
     parser.add_argument("-nucsamp",type=str,default='cl', help="Nuclear sampling (in case 'init' is not None). GS=ground state, WP=wavepacket",
                         choices=['classical','cl','wigner','wig','GS','WP'])
     parser.add_argument("-elsamp",type=str,default='theta',choices=["focused","theta"],help='Choice of initial distribution')
@@ -161,9 +161,6 @@ def setup_model(args):
         mashf90.init_tully(model[-1],mass)
     elif model in ['fmo3','fmo7']:
         mashf90.init_frexc(mass,omega,Vconst,c,nf,nf_site,ns)  
-        if args.diabasis=='exc':
-            eigs, U = np.linalg.eigh(Vconst)
-            mashf90.init_basis(U,ns)  
     else:
         mashf90.init_linvib(mass,omega,Vconst,Vlin,nf,ns)
 
@@ -264,9 +261,11 @@ def sample(args,mass,omega,nf,ns):
             phi = np.random.uniform(0,2*np.pi,ns)
             qe[:,j] = np.cos(phi)*np.sqrt(Pn)
             pe[:,j] = np.sin(phi)*np.sqrt(Pn)
-        if args.initbasis=='dia' and args.diabasis=='exc':
-            """ Convert from exc to site """
-            U = mashf90.get_basis(ns)
+
+        """ Perform basis transformation (if requested) """
+        if args.initbasis=='exc':
+            """ Convert from exc to site basis: transform given by q=0 """
+            vad,U = mashf90.get_vad(0.*q[:,j],ns)
             qe[:,j] = np.dot(U,qe[:,j])
             pe[:,j] = np.dot(U,pe[:,j])
         elif args.initbasis=='adia':

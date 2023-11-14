@@ -7,7 +7,6 @@ module mash
 
    real(dp) :: alpha  ! ns-dependent constant in observables
 
-   real(dp), allocatable :: Umeas(:,:)
 
 contains
 
@@ -24,15 +23,6 @@ contains
       alpha = (ns-1.d0)/(Hn-1.d0)
    end subroutine
 
-   subroutine initbasis(Umeas_)
-      use pes, only : ns
-      real(dp) :: Umeas_(ns,ns)
-!
-!     Initialize basis to do measurements in
-!
-      allocate(Umeas(ns,ns))
-      Umeas = Umeas_
-   end subroutine
 
 ! ============= Potential, Hamiltonian =============
 
@@ -162,7 +152,7 @@ contains
       use pes, only : ns, potad
       real(dp), intent(in) :: q(:), qe(:), pe(:)
       complex(dpc), intent(out) :: obs(:,:)
-      character, intent(in) :: rep ! representation ('d' or 'a')
+      character, intent(in) :: rep ! representation ('d','e' or 'a')
       integer, intent(in) :: typ ! projection type theta_n (1) or Phi_n (2)
       logical, intent(in) :: poponly ! Only compute populations
 !
@@ -179,9 +169,16 @@ contains
          call obsbls_mash(c, obs, typ, poponly)
          deallocate(Vad,U)
       else if (rep.eq.'d') then
-         ! Diabatic observables
-         c = dcmplx(matmul(qe,Umeas),matmul(pe,Umeas))
+         ! Diabatic (site) observables
+         c = dcmplx(qe,pe)
          call obsbls_mash(c, obs, typ, poponly)
+      else if (rep.eq.'e') then
+         ! Diabatic (exciton) observables
+         allocate(Vad(ns),U(ns,ns))
+         call potad(q*0.d0,Vad,U)
+         c = dcmplx(matmul(qe,U),matmul(pe,U))
+         call obsbls_mash(c, obs, typ, poponly)
+         deallocate(Vad,U)
       else
          stop 'obsbls: Undefined representation'
       end if
