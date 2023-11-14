@@ -49,3 +49,5 @@ If the potential has a particularly simple form that allows for faster computati
 
 ***
 
+## Problems?
+Please don't hesitate contacting me if you discover any bugs. (Thanks to Eric Koessler, Rochester)
