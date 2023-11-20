@@ -392,6 +392,7 @@ contains
       if (nf.eq.1) then
          pnac = p
       else
+         if (norm2(dj).lt.1d-16) print*, 'Warning: Norm of NAC is zero in mash.f90'
          pnac = dot_product(p,dj)/dot_product(dj,dj)*dj
       end if
       porth = p - pnac

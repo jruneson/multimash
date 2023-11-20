@@ -206,11 +206,11 @@ def sample(args,mass,omega,nf,ns):
     pe = np.empty((ns,npar),order="F")
     for j in range(npar):
         """ Nuclear sampling """
-        if args.nucsamp=='cl':
+        if args.nucsamp in ['cl','classical']:
             """ Classical """
             q[:,j] = np.random.normal(0,1./np.sqrt(beta*mass*omega**2),nf)
             p[:,j] = np.random.normal(0,np.sqrt(mass/beta),nf)
-        elif args.nucsamp=='wigner':
+        elif args.nucsamp in ['wig','wigner']:
             """ Wigner """
             qsig = np.sqrt(1./(2*mass*omega*np.tanh(beta*omega/2)))
             psig = np.sqrt(mass*omega/(2*np.tanh(beta*omega/2)))
@@ -238,6 +238,7 @@ def sample(args,mass,omega,nf,ns):
             p[:,j] = np.random.normal(pmean,psig,nf)
 
         """ Electronic sampling """
+        assert(args.init<ns and args.init>=0)
         if args.elsamp=='theta':
             """ Theta sampling: sample from region where Theta_init(c) = 1 """
             while 1:
