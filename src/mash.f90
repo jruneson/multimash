@@ -5,14 +5,15 @@ module mash
    use types
    implicit double precision (a-h,o-z)
 
-   real(dp) :: alpha  ! ns-dependent constant in observables
-
+   real(dp) :: alpha   ! ns-dependent constant used in observables
+   real(dp) :: beta    ! Reciprocal temperature
 
 contains
 
 ! =============== Initialization =============
-   subroutine init()
+   subroutine init(beta_)
       use pes, only : ns
+      real(dp) :: beta_
 !
 !    Initialize module
 !
@@ -21,6 +22,8 @@ contains
          Hn = Hn + 1.d0/n
       end do
       alpha = (ns-1.d0)/(Hn-1.d0)
+
+      beta = beta_
    end subroutine
 
 
@@ -52,7 +55,20 @@ contains
       call mash_pot(q, qe, pe, vtot)
       ham = vtot + 0.5d0*sum(p**2/mass)
    end function
-
+   
+   real(dp) function ham_a(q, p, a)
+      use pes, only : ns, mass, potad
+      real(dp), intent(in) :: q(:), p(:)
+      integer :: a
+!
+!     Function to compute Hamiltonian at a phase-space point
+!
+      real(dp), allocatable :: U(:,:), Vad(:)
+      allocate(U(ns,ns),Vad(ns))
+      call potad(q,Vad,U)
+      ham_a = Vad(a) + 0.5d0*sum(p**2/mass)
+      deallocate(U,Vad)
+   end function
 
 ! =============== Observable-related subroutines =============
 
@@ -111,104 +127,60 @@ contains
       deallocate(pop)
    end subroutine
 
-   subroutine obsbls_mash(c, obs, typ, poponly)
+   subroutine pops_phi(c, pop)
       use pes, only : ns
       complex(dpc), intent(inout) :: c(:)
-      complex(dpc), intent(inout) :: obs(:,:)
-      integer :: typ
-      logical :: poponly
+      real(dp), intent(inout) :: pop(:)
 !
-!  Calculate binned observables in given representation. 
-!     obs(k,k) -- population
-!     obs(k,l) -- coherence 
-!
-!     typ==1 -- binned (Theta function)
-!     typ==2 -- weighted in the Phin way
+!  Calculate Phi_n observable (|n><m| becomes alpha_N c_n^*c_m + beta_N delta_{nm})
 !
       overn = 1.d0/ns
-      call cstate_ad(c,l) !highest populated state
-      obs = 0.d0
-      if (typ.eq.1) then
-         obs(l,l) = 1.d0
-      else if (typ.eq.2) then
-         do k=1,ns
-            obs(k,k) = overn + alpha*(abs(c(k))**2 - overn)
-         end do
-      end if
-      if (poponly) then
-         return
-      end if
-
-      ! Coherences
-      do k=1,ns
-         do l=k+1,ns
-            obs(k,l) = alpha*conjg(c(k))*c(l)
-            obs(l,k) = conjg(obs(k,l))
-         end do
-      end do
+      pop = overn + alpha*(abs(c)**2 - overn)
    end subroutine
 
-   subroutine obsbls(q, qe, pe, obs, rep, typ, poponly)
+   subroutine pops(q, qe, pe, pop, rep)
       use pes, only : ns, potad
       real(dp), intent(in) :: q(:), qe(:), pe(:)
-      complex(dpc), intent(out) :: obs(:,:)
-      character, intent(in) :: rep ! representation ('d','e' or 'a')
-      integer, intent(in) :: typ ! projection type theta_n (1) or Phi_n (2)
-      logical, intent(in) :: poponly ! Only compute populations
+      real(dp), intent(out) :: pop(:)
+      character, intent(in) :: rep ! representation ('d' for diabatic/site, 'e' for exciton, 'a' for adiabatic)
 !
 !  Observables in diabatic or adiabatic representation
 !
       real(dp), allocatable :: Vad(:), U(:,:)
       complex(dpc), allocatable :: c(:)
+      if (.not. (rep.eq.'d' .or. rep.eq.'e' .or. rep.eq.'a')) then
+         stop 'obsbls: Undefined representation'
+      end if
       allocate(c(ns))
-      if (rep.eq.'a') then
-         ! Adiabatic observables
-         allocate(Vad(ns),U(ns,ns))
-         call potad(q,Vad,U)
-         c = dcmplx(matmul(qe,U),matmul(pe,U))
-         call obsbls_mash(c, obs, typ, poponly)
-         deallocate(Vad,U)
-      else if (rep.eq.'d') then
-         ! Diabatic (site) observables
+      if (rep.eq.'d') then
+         ! Diabatic (original basis) observables
          c = dcmplx(qe,pe)
-         call obsbls_mash(c, obs, typ, poponly)
+         call pops_phi(c, pop)
       else if (rep.eq.'e') then
          ! Diabatic (exciton) observables
          allocate(Vad(ns),U(ns,ns))
          call potad(q*0.d0,Vad,U)
          c = dcmplx(matmul(qe,U),matmul(pe,U))
-         call obsbls_mash(c, obs, typ, poponly)
+         call pops_phi(c, pop)
          deallocate(Vad,U)
-      else
-         stop 'obsbls: Undefined representation'
+      else if (rep.eq.'a') then
+         ! Adiabatic observables
+         allocate(Vad(ns),U(ns,ns))
+         call potad(q,Vad,U)
+         c = dcmplx(matmul(qe,U),matmul(pe,U))
+         call pops_phi(c, pop)
+         deallocate(Vad,U)
       end if
       deallocate(c)
    end subroutine
 
-   subroutine pops(q, qe, pe, pop, rep, typ)
-      use pes, only : ns
-      real(dp), intent(in) :: q(:), qe(:), pe(:)
-      real(dp), intent(inout) :: pop(:)
-      character, intent(in) :: rep
-      integer, intent(in) :: typ
-!
-!  All populations |n><n|
-!
-      complex(dpc), allocatable :: obs(:,:)
-      allocate(obs(ns,ns))
-      call obsbls(q, qe, pe, obs, rep, typ, .true.)
-      do n=1,ns
-         pop(n) = real(obs(n,n))
-      end do
-      deallocate(obs)
-   end subroutine
 
 ! =============== Dynamics-related subroutines ===============
-   subroutine evolve(q, p, qe, pe, Vad, U, dvdq, a, dtbase, ierr)
+   subroutine evolve(q, p, qe, pe, Vad, U, dvdq, a, dtbase)
       use pes, only : nf, ns, grad_a
       real(dp), intent(inout) :: q(:), p(:), qe(:), pe(:), Vad(:), &
                                  U(:,:), dvdq(:)
-      integer, intent(inout) :: a, ierr
+      integer, intent(inout) :: a
       real(dp), intent(in) :: dtbase
       real(dp), allocatable :: q0(:),p0(:),qe0(:),pe0(:), &
                                Vad0(:), U0(:,:), dvdq0(:)
@@ -221,8 +193,7 @@ contains
       allocate(q0(nf),p0(nf),qe0(ns),pe0(ns),Vad0(ns),U0(ns,ns),dvdq0(nf))
       allocate(ca0(ns),ca1(ns))
 
-      ierr = 0
-      maxhop = 30
+      maxhop = 10
       dt = dtbase
       do ihop=1,maxhop ! Limit number of hops to look for in a timestep dt
          ! Store initial values
@@ -238,7 +209,7 @@ contains
          ca1 = dcmplx(matmul(qe,U),matmul(pe,U))
          call cstate_ad(ca1,b)
 
-         if (a.eq.b) then
+         if (b.eq.a) then
             ! Stayed on state - we're done
             exit
          else
@@ -278,10 +249,20 @@ contains
             dt = dt - tx
          end if
          if (ihop.eq.maxhop) then
-            ! Too many hops -- highlight trajectory
-            ierr=1
+            ! Too many hops -- just finish it off
+            call verlet(q,p,qe,pe,Vad,U,dvdq,a,dt)
+            ca1 = dcmplx(matmul(qe,U),matmul(pe,U))
+            call cstate_ad(ca1,b)
+            if (b.ne.a) then
+               call cross(q, p, ca1, a, b, Vad, U, accepted)
+               if (accepted) then
+                  call grad_a(q,U,b,dvdq)
+                  a = b
+               end if
+            end if                 
          end if
       end do
+
       deallocate(ca0,ca1)
       deallocate(q0,p0,qe0,pe0,Vad0,U0)
    end subroutine
@@ -295,22 +276,6 @@ contains
       call cstate2_ad(ca,a,b)
       deltaP = abs(ca(a))**2 - abs(ca(b))**2
    end function
-
-   subroutine savetmp(q,p,qe,pe,Vad,U,dvdq,q0,p0,qe0,pe0,Vad0,U0,dvdq0)
-      real(dp), intent(inout) :: q(:),p(:),qe(:),pe(:),Vad(:),U(:,:),dvdq(:),&
-            q0(:),p0(:),qe0(:),pe0(:), Vad0(:),U0(:,:),dvdq0(:)   
-!
-!     Store temporary variables and potential information
-!
-      q0 = q
-      p0 = p
-      qe0 = qe
-      pe0 = pe
-      Vad0 = Vad
-      U0 = U
-      dvdq0 = dvdq
-   end subroutine
-
 
    subroutine verlet(q, p, qe, pe, Vad, U, dvdq, a, dt)
       use pes, only : potad, grad_a
@@ -331,7 +296,6 @@ contains
       call step_e(qe,pe,Vad,U,dt2)
    end subroutine
 
-
    subroutine step_p(p,dvdq,dt)
       real(dp), intent(inout) :: p(:)
       real(dp), intent(in) :: dvdq(:), dt
@@ -342,17 +306,35 @@ contains
    end subroutine
 
    subroutine step_q(q, p, dt)
-      use pes, only : mass
-      real(dp), intent(inout) :: q(:), p(:)
+      use pes, only : nf,mass,omega,cayley
+      real(dp), intent(inout) :: q(nf), p(nf)
       real(dp), intent(in) :: dt
 !
-!     Evolve q and check for switch of adiabatic potential
+!     Cayley evolution through a time interval dt.
 !
-      q = q + dt*p/mass
+      if (cayley) then
+         do i = 1,nf
+            em = mass(i)
+            dtm = dt/em
+            w2 = omega(i)**2
+            x = w2*dt**2/4
+            pp = (1-x)/(1+x)
+            pq = -em*w2*dt/(1+x)
+            qp = dtm/(1+x)
+            qq = (1-x)/(1+x)
+            
+            pnew = pq*q(i) + pp*p(i)  
+            q(i) = qq*q(i) + qp*p(i)
+            p(i) = pnew
+         end do
+      else
+         q = q + dt*p/mass
+      end if
    end subroutine
 
    subroutine step_e(qe, pe, Vad, U, dt)
       use pes, only : ns
+      use maths, only : iu, symevp
       real(dp), intent(inout) :: qe(:), pe(:)
       real(dp), intent(in) :: Vad(:), U(:,:)
       real(dp), intent(in) :: dt
@@ -392,33 +374,47 @@ contains
       if (nf.eq.1) then
          pnac = p
       else
-         if (norm2(dj).lt.1d-16) print*, 'Warning: Norm of NAC is zero in mash.f90'
          pnac = dot_product(p,dj)/dot_product(dj,dj)*dj
       end if
       porth = p - pnac
-      Ekin = 0.5d0*sum(pnac**2) !/mass)
+      Ekin = 0.5d0*sum(pnac**2)
       Vdiff = Vad(m)-Vad(n)
       if ((Ekin-Vdiff).gt.0.d0) then
          ! Rescale momentum 
          pnac = sqrt(2.d0*(Ekin-Vdiff)) & ! (no masses since p is mass-scaled)
              * pnac/sqrt(dot_product(pnac,pnac))
-         p = porth + pnac
          accepted = .true.
       else
          ! Reverse momentum along NAC vector
          pnac = -pnac
-         p = porth + pnac
          accepted = .false.
-      end if
+      end if      
+      p = porth + pnac
       p = p*sqrt(mass)
       deallocate(d,dj,pnac,porth)
    end subroutine
 
-   subroutine store(q, p, qe, pe, it, qt, pt, qet, pet)
+   subroutine savetmp(q,p,qe,pe,Vad,U,dvdq,q0,p0,qe0,pe0,Vad0,U0,dvdq0)
+      real(dp), intent(inout) :: q(:),p(:),qe(:),pe(:),Vad(:),U(:,:),dvdq(:),&
+            q0(:),p0(:),qe0(:),pe0(:), Vad0(:),U0(:,:),dvdq0(:)   
+!
+!     Store temporary variables and potential information
+!
+      q0 = q
+      p0 = p
+      qe0 = qe
+      pe0 = pe
+      Vad0 = Vad
+      U0 = U
+      dvdq0 = dvdq
+   end subroutine
+
+   subroutine store(q, p, qe, pe, a, it, qt, pt, qet, pet, at)
       use types
       real(dp), intent(in) :: q(:), p(:), qe(:), pe(:)
-      integer, intent(in) :: it
+      integer, intent(in) :: a, it
       real(dp), intent(inout) :: qt(:,:), pt(:,:), qet(:,:), pet(:,:)
+      integer, intent(inout) :: at(:)
 !
 !  Store state at a given timestep
 !
@@ -426,7 +422,7 @@ contains
       pt(it,:) = p
       qet(it,:) = qe
       pet(it,:) = pe
+      at(it) = a
    end subroutine 
-
 
 end module

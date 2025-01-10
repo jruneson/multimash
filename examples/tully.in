@@ -8,8 +8,8 @@
 -obstyp nuc
 #
 # Convergence
--ntraj 100000
+-ntraj 10000
 -nt    600
 -dt    0.25
 -units fs
--npar 1
+-npar 8

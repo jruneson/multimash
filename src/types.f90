@@ -17,6 +17,5 @@ INTEGER, PARAMETER :: DPC = KIND((1.0D0,1.0D0))
 INTEGER, PARAMETER :: LGT = KIND(.true.)
 
 real(dp) :: pi = dacos(-1.d0)
-complex(DPC), parameter :: iu = (0.0_dp,1.0_dp)
 
 END MODULE types

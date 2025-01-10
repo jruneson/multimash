@@ -1,15 +1,19 @@
 MODULE=mashf90
 # If you add any further potential module files, add them to the next line (must appear later than pes.o)
-OBJ=types.o pes.o linvib.o bilinvib.o frexc.o tully.o mash.o
-LIBS=-llapack
+OBJ=types.o maths.o pes.o linvib.o frexc.o tully.o mash.o
 
-debug: FC=gfortran -g -fPIC -Wall -Wextra -Wconversion -pedantic --check=all
-debug: F2PY=f2py --fcompiler=gnu95
+COMPILER=gfortran
+FCOMPILER=gnu95
+LIBS=-llapack -lblas
+
+# Choose between debug (tells which line the code breaks on) and fast (parallel and optimized)
+debug: FC=$(COMPILER) -g -fPIC -Wall -Wextra -Wconversion -pedantic --check=all
+debug: F2PY=f2py --fcompiler=$(FCOMPILER)
 debug: main
 
 fast: FLAGS=-O2 -fopenmp -fPIC
-fast: FC=gfortran $(FLAGS)
-fast: F2PY=f2py --fcompiler=gnu95 --f90flags='$(FLAGS)' -lgomp --quiet
+fast: FC=$(COMPILER) $(FLAGS)
+fast: F2PY=f2py --fcompiler=$(FCOMPILER) --f90flags='$(FLAGS)' -lgomp --quiet
 fast: main
 
 main: $(MODULE).so

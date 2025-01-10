@@ -6,9 +6,8 @@ module tully
 
    integer :: model
    ! Choices:
-   ! 1 : Miller's modified version of Tully 1
-   ! 2 : Tully 2
-   ! 3 : Not currently implemented
+   ! 1 : Miller's modified version of Tully's avoided crossing
+   ! 2 : Tully's double crossing
    real(dp) :: A, B, C, D
    real(dp) :: E
 
@@ -44,8 +43,8 @@ contains
 
 
    subroutine pot(q, V)
-      use pes, only : ns
-      real(dp), intent(in) :: q(:)
+      use pes, only : ns,nf
+      real(dp), intent(in) :: q(nf)
       real(dp), intent(out) :: V(ns,ns)
 !
 !     Diabatic potential matrix

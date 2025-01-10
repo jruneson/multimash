@@ -2,7 +2,7 @@
 #
 # System options (77 K)
 -model fmo3
--diabasis site
+-basis site
 -T 77
 -lamda 35.
 -omegac 106.14
