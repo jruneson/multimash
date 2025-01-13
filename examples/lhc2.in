@@ -1,0 +1,21 @@
+# System
+-model lhc2
+-basis site
+-initbasis site
+-init 8
+-T 300
+-bath B777
+-wmax 500
+-units cmm1
+-nucsamp cl
+-elsamp focused
+-obstyp pop
+-disorder lhc2
+-polaron vpt
+#
+# Convergence
+-ntraj 1000
+-nt 10000
+-dt 0.5
+-nf 200
+-npar 8

@@ -7,14 +7,10 @@ import sys
 import model
 from src import mashf90
 
-"""=========== Read input parameters=========""" 
+"""=========== Read input parameters =========""" 
 args = model.read_args()
 
-""" ==== Set random seed (comment line if this is not wanted) ==== """
-# np.random.seed(42)
-
-""" ======= Save commonly used arguments in their own variables ======"""
-model = args.model
+""" Save commonly used arguments in their own variables """
 beta = args.beta
 nf = args.nf
 dt = args.dt
@@ -27,13 +23,13 @@ obstyp = args.obstyp
 if npar>1:
     os.environ["OMP_NUM_THREADS"] = str(npar)
 
-""" ==== Setup time """
+""" Setup time """
 t = np.arange(nt+1)*dt
 
 """======== Initialize potential ========="""
 mass, omega, nf, ns = model.setup_model(args)
 
-"""===== Initialize MASH Fortran module===="""
+"""===== Initialize MASH Fortran module ===="""
 mashf90.init_mash(beta)
 
 """ Debugging section to plot energy conservation, plot adiabatic populations etc. """
@@ -41,7 +37,7 @@ if args.debug:
     model.debug(args,mass,omega,nf,ns)
     sys.exit()
 
-"""Initialize observables"""
+""" ===== Initialize observables ==== """
 if obstyp=='pop':
     Bt = np.zeros((nt+1,ns))
 elif obstyp=='nuc':

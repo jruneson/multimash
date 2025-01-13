@@ -28,8 +28,9 @@ w_low = 0.; c_low = 0.; w_intra = 0.; c_intra = 0.
 def read_args():
     """ Run file with 'mash.py +input.in' """
     parser = CustomArgumentParser(fromfile_prefix_chars=["@","+"])
+    # General
     parser.add_argument("-model", type=str, default="spinboson", help="Model system", 
-                        choices=["spinboson","fmo3","fmo7","fmo8","tully1","lh2","lhc2"])
+                        choices=["spinboson","fmo3","fmo7","fmo8","tully1","tully2","lh2","lhc2"])
     parser.add_argument("-basis", type=str, default="site", help="Diabatic basis for certain model systems", 
                         choices=["exc","site","adia","dia"])
     parser.add_argument("-units", type=str, default="au",help="""Choose unit system. 
@@ -37,20 +38,18 @@ def read_args():
                         fs: input in fs, output in fs. """,
                         choices=["au","cmm1","fs"])
     parser.add_argument("-obstyp", type=str, default="pop", help="Observable types", 
-                        choices=["pop","all","nuc"])
+                        choices=["pop","nuc"])
     parser.add_argument("-init", type=int,help="Initial state (in Python indexing)")
     parser.add_argument("-initbasis",type=str,default='dia',choices=["dia","adia","site","exc"],help='Basis for initial state')
     parser.add_argument("-nucsamp",type=str,default='cl', 
                         help="Nuclear sampling. classical/cl=classical, wigner/wig=thermal wigner, GS=ground state Wigner, clzero=classical T=0, WP=wavepacket",
                         choices=['classical','cl','wigner','wig','GS','clzero','WP'])
     parser.add_argument("-elsamp",type=str,default='focused',choices=["focused","theta"],help='Choice of initial distribution')
-    parser.add_argument("-debug",action="store_true",help='Toggle debug code (plot energy conservation etc)')
-    parser.add_argument("-disorder",type=str,default='none',choices=["none","fmo","lhc2"],help='Choice of static disorder')
-    parser.add_argument("-bath",type=str,default='debye',choices=["debye","coursegrain","B777"],help='Choice of low-frequency bath for fmo and lhc2')
-    parser.add_argument("-wmax",type=float,default=None,help="Max omega in discreziation")
-    parser.add_argument("-polaron",type=str,choices=["vpt","langfirsov"],help='Type of polaron transformation to remove high-frequency modes')
     parser.add_argument("-beta",type=float,default=1.,help="Reciprocal temperature [in a.u.]")
     parser.add_argument("-T",type=float,default=0,help="Temperature [in kelvin]")
+    # Debugging
+    parser.add_argument("-debug",action="store_true",help='Run one debug trajectory and plot energy conservation etc.')
+    parser.add_argument("-seed",type=float,default=None,help="If set, initialize random seed.")
     # Convergence
     parser.add_argument("-dt",default=41,type=float,help="Time step")
     parser.add_argument("-nt","-TS",type=int,help="Number of time steps")
@@ -62,6 +61,11 @@ def read_args():
     parser.add_argument("-epsilon","-eps",type=float,default=0.,help="(Half) energy bias")
     parser.add_argument("-lamda",type=float,default=0,help="System-bath reorganization energy.")
     parser.add_argument("-omegac",type=float,default=0.,help="Cutoff frequency.")
+    # Frenkel-exciton models
+    parser.add_argument("-disorder",type=str,default='none',choices=["none","fmo","lhc2"],help='Choice of static disorder')
+    parser.add_argument("-bath",type=str,default='debye',choices=["debye","coursegrain","B777"],help='Choice of low-frequency bath for fmo and lhc2')
+    parser.add_argument("-wmax",type=float,default=None,help="Max omega in discreziation")
+    parser.add_argument("-polaron",type=str,choices=["vpt","langfirsov"],help='Type of polaron transformation to remove high-frequency modes')
     # Tully model
     parser.add_argument("-WPenergy",type=float,default=0.,help="Wavepacket energy")
     parser.add_argument("-gamma",type=float,default=0.,help="Wavepacket width parameter")
@@ -79,6 +83,9 @@ def read_args():
         args.dt = args.dt * fs
     if args.T:
         args.beta = 1./(kB*args.T)
+
+    if not args.seed is None:
+        np.random.seed(args.seed)
     
     return args
 
