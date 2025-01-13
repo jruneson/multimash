@@ -4,11 +4,11 @@ import numpy as np
 import os
 import sys
 
-import utils
+import model
 from src import mashf90
 
 """=========== Read input parameters=========""" 
-args = utils.read_args()
+args = model.read_args()
 
 """ ==== Set random seed (comment line if this is not wanted) ==== """
 # np.random.seed(42)
@@ -31,14 +31,14 @@ if npar>1:
 t = np.arange(nt+1)*dt
 
 """======== Initialize potential ========="""
-mass, omega, nf, ns = utils.setup_model(args)
+mass, omega, nf, ns = model.setup_model(args)
 
 """===== Initialize MASH Fortran module===="""
 mashf90.init_mash(beta)
 
 """ Debugging section to plot energy conservation, plot adiabatic populations etc. """
 if args.debug:
-    utils.debug(args,mass,omega,nf,ns)
+    model.debug(args,mass,omega,nf,ns)
     sys.exit()
 
 """Initialize observables"""
@@ -52,7 +52,7 @@ elif obstyp=='nuc':
 """======== Loop over trajectories ========"""
 ndiscarded = 0
 for itraj in range(ntraj//npar):
-    q0,p0,qe0,pe0 = utils.sample(args,mass,omega,nf,ns)
+    q0,p0,qe0,pe0 = model.sample(args,mass,omega,nf,ns)
     q = np.array(q0.copy(),order='F')
     p = np.array(p0.copy(),order='F')
     qe = np.array(qe0.copy(),order='F')
@@ -87,7 +87,7 @@ for itraj in range(ntraj//npar):
             ctraj = (itraj+1)*npar - ndiscarded
             print(ctraj+ndiscarded)
             if args.obstyp in ['pop']:
-                utils.savedata(Bt/ctraj,t,args,args.obstyp)
+                model.savedata(Bt/ctraj,t,args,args.obstyp)
             np.savetxt('log.out',np.array([ctraj,ntraj]),fmt='%i')
 
 """ Log number of successful trajectories as well as requested number of trajectories """
@@ -98,7 +98,7 @@ ntraj = ctraj
 """ Store final results """
 if args.obstyp in ['pop']:
     Bt /= ntraj
-    utils.savedata(Bt,t,args,args.obstyp)
+    model.savedata(Bt,t,args,args.obstyp)
 if args.obstyp=='nuc':
     bins = 200
     qhist,qbins = np.histogram(qs,bins,density=True)
@@ -110,4 +110,4 @@ if args.obstyp=='nuc':
 
     Tpop /= ntraj
     Rpop /= ntraj
-    np.savetxt('scatt.out',np.column_stack([t/utils.fs,Tpop,Rpop]))
+    np.savetxt('scatt.out',np.column_stack([t/model.fs,Tpop,Rpop]))
