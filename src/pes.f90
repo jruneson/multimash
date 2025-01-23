@@ -149,7 +149,7 @@ module pes
 
       ! convert H' to adia.
       do i=1,nf
-         Gad(i,:) = matmul(Gdia(i,:,:),U(:,b))
+         Gad(i,:) = matmul(transpose(U),matmul(Gdia(i,:,:),U(:,b)))
       end do
 
       deallocate(Gdia)

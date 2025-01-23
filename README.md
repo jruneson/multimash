@@ -52,3 +52,6 @@ The Fortran code contains a few potentials, e.g. `linvib` and `tully`. If you wa
 
 ***
 
+
+## Problems?
+Please don't hesitate contacting me if you discover any bugs. (Thanks to Eric Koessler, Rochester; Annina Lieberherr, Oxford; Bokang Huo, Berkeley)

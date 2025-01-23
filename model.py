@@ -100,7 +100,7 @@ def setup_model(args):
     omega = np.zeros(nf,dtype=np.float64)
     if model=='spinboson':
         ns = 2
-        Vconst = np.array([[0.,Delta],[Delta,-epsilon]])
+        Vconst = np.array([[epsilon,Delta],[Delta,-epsilon]])
         Vlin = np.zeros((nf,ns,ns),dtype=np.float64)
         fac = np.sqrt(0.5*args.lamda/nf)
         c = np.zeros(nf)
